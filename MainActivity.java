@@ -70,11 +70,11 @@ public class MainActivity extends Activity {
 		locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000L,500.0f, onLocationChange);
 		location = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
         }
-        if(locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+       else if(locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
             locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000L,500.0f, onLocationChange);
             location = locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         }
-        if(locManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)){
+      else if(locManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)){
             locManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER,1000L,500.0f, onLocationChange);
             location = locManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
         }
