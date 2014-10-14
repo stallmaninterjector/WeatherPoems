@@ -5,6 +5,7 @@
  */
 
 package com.Tom.weatherpoems;
+package com.smart.weatherpoems;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,10 @@ import java.util.concurrent.TimeoutException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -32,107 +37,41 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-//import android.util.Log;
 import android.view.Menu;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
-	public String poem=null;
+
+	public String poem = null;
 	//private static final String DEBUG_TAG = null;
 	public static String apiurl=null;
-
+	private TextView poemView;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
 
-		/*LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-		Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        boolean gpsEnabled = false, networkEnabled=false;
-		try {
-           gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        } catch (Exception ex) {
-        }
-        try {
-            networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        } catch (Exception ex) {
-        }
-		if(!gpsEnabled && !networkEnabled)
-			finish();*/
-		Location location = null;
-        LocationManager locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        if(locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
-		locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000L,500.0f, onLocationChange);
-		location = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        }
-       else if(locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
-            locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000L,500.0f, onLocationChange);
-            location = locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        }
-      else if(locManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)){
-            locManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER,1000L,500.0f, onLocationChange);
-            location = locManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-        }
-        else{
-            System.out.println("Could not acquire location at all. Turn on yer damn GPS");
-        }
-		System.out.println(location);
-		double lat = location.getLatitude();
-		double lon = location.getLongitude();
-		System.out.println(lat+" "+lon);
-		Context c = this;
-		Geocoder geocoder = new Geocoder(c, Locale.getDefault());
-		Address returnedAddress = null;
-		try {
-			List<Address> address = geocoder.getFromLocation(lat, lon, 1);
-			try {
-				returnedAddress = address.get(0);
-			} catch (IndexOutOfBoundsException ex) {
-				AlertDialog.Builder builder = new AlertDialog.Builder(this)
-				.setMessage("Unable to find your location.")
-				.setNeutralButton("okay :(", new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int id) {
-						finish();
-					}
-				});
-				builder.create();
-			}
-            Object[] kek=address.toArray();
-            for (Object aKek : kek) System.out.println(aKek);
-			System.out.println(returnedAddress);
-            String ZIPCode=null;
-            try{
-            ZIPCode = returnedAddress.getPostalCode();
-            }catch(NullPointerException e){
-                System.out.println("Your location is not linked to an address.");
-            }
-			String apibegin="http://api.wunderground.com/api/0484e65ed3c3a0fa/conditions/q/";
-			String apiend=".json";
-			apiurl=apibegin+ZIPCode+apiend;
-			AsyncTask<String, Integer, String> task = new downloadWeatherData().execute(apiurl);
-			System.out.println(apiurl);
-			task.get(20000, TimeUnit.MILLISECONDS);
-			TextView textview = new TextView(this);
-			textview.setText(poem);
-			setContentView(textview);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (TimeoutException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		poemView = (TextView)findViewById(R.id.poem);
+		LocationManager locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		if(locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+			locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000L,500.0f, onLocationChange);
+
 		}
+		else if(locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+			locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000L,500.0f, onLocationChange);
+
+		}
+		else	if(locManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)){
+			locManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER,1000L,500.0f, onLocationChange);
+
+		}
+		else{
+			System.out.println("Could not acquire location at all. Turn on yer damn GPS");
+		}
+
+
+
 
 	}
 	class downloadWeatherData extends AsyncTask<String, Integer, String> {
@@ -149,7 +88,7 @@ public class MainActivity extends Activity {
 		}
 
 	}
-	public /*static*/ String getJsonFromService(String urlOfService) throws JSONException {
+	public String getJsonFromService(String urlOfService) throws JSONException {
 		String jsoncode;
 		try {
 			int length=10000;
@@ -165,15 +104,23 @@ public class MainActivity extends Activity {
 			//System.out.println(jsoncode);
 			JSONObject json = new JSONObject(jsoncode);
 			JSONObject current_conditions = json.getJSONObject("current_observation");
-			String weather =  current_conditions.getString("weather");
-			int temp = current_conditions.getInt("temp_f");
-			int windSpeed = current_conditions.getInt("wind_mph");
-			float precipToday = (float) current_conditions.getDouble("precip_today_in");
-			int visibility = current_conditions.getInt("visibility_mi");
-			int UV = current_conditions.getInt("UV");
+			final String weather =  current_conditions.getString("weather");
+			final int temp = current_conditions.getInt("temp_f");
+			final int windSpeed = current_conditions.getInt("wind_mph");
+			final float precipToday = (float) current_conditions.getDouble("precip_today_in");
+			final int visibility = current_conditions.getInt("visibility_mi");
+			final int UV = current_conditions.getInt("UV");
 			String humidityString = current_conditions.getString("relative_humidity");
-			int humidity = java.lang.Integer.parseInt(humidityString.replaceAll("[\\D]", ""));
+			final int humidity = java.lang.Integer.parseInt(humidityString.replaceAll("[\\D]", ""));
 			System.out.println("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
+			runOnUiThread(new Runnable() {
+				
+				@Override
+				public void run() {
+					poemView.setText(("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity));	
+				}
+			});
+			
 			int condition=0;
 			if(temp<=32 && windSpeed >=10 && precipToday > .3){
 				condition=1; //Blizzard!
@@ -216,9 +163,9 @@ public class MainActivity extends Activity {
 			else if (temp<=32) {
 				condition=10; //Cold!
 			}
-            else if(temp>85){
-                condition=11; //Hot
-            }
+			else if(temp>85){
+				condition=11; //Hot
+			}
 			System.out.println(condition);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -243,13 +190,7 @@ public class MainActivity extends Activity {
 		linePool.add("No school tomorrow");
 		linePool.add("Winter-Wonderland");
 		linePool.add("Salt trucks are en route");
-		/*linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");*/
+
 		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		return linePool.get(choice);
@@ -258,15 +199,7 @@ public class MainActivity extends Activity {
 		List<String> linePool=new LinkedList<String>();
 		linePool.add("Shovels will come in handy");
 		linePool.add("Tree limbs are getting heavy");
-		/*linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");*/
+
 		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
@@ -329,29 +262,7 @@ public class MainActivity extends Activity {
 	}
 	public static String cold5() {
 		List<String> linePool=new LinkedList<String>();
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
+
 		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
@@ -361,36 +272,64 @@ public class MainActivity extends Activity {
 		List<String> linePool=new LinkedList<String>();
 		linePool.add("");
 		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		linePool.add("");
-		//linePool.add("");
-		//linePool.add("");
+
 		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
 		return lineToReturn;
 	}
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.activity_main, menu);
-		return true;
-	}
+
 	LocationListener onLocationChange=new LocationListener() {
-		public void onLocationChanged(Location loc) {}
+		public void onLocationChanged(final Location loc) {
+			System.out.println(loc.getLatitude()+" "+loc.getLongitude());
+
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() { 
+					
+					Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+					Address returnedAddress = null;
+					try {
+						List<Address> address = geocoder.getFromLocation(loc.getLatitude(), loc.getLongitude(), 1);
+						try {
+							returnedAddress = address.get(0);
+						} catch (IndexOutOfBoundsException ex) {
+							//					AlertDialog.Builder builder = new AlertDialog.Builder(this)
+							//					.setMessage("Unable to find your location.")
+							//					.setNeutralButton("okay :(", new DialogInterface.OnClickListener() {
+							//						public void onClick(DialogInterface dialog, int id) {
+							//							finish();
+							//						}
+						}
+
+						//	builder.create();
+
+						Object[] kek=address.toArray();
+						for (Object aKek : kek) System.out.println(aKek);
+						System.out.println(returnedAddress);
+						String ZIPCode=null;
+						try{
+							ZIPCode = returnedAddress.getPostalCode();
+						}catch(NullPointerException e){
+							System.out.println("Your location is not linked to an address.");
+						}
+						String apibegin="http://api.wunderground.com/api/0484e65ed3c3a0fa/conditions/q/";
+						String apiend=".json";
+						apiurl=apibegin+ZIPCode+apiend;
+						
+						AsyncTask<String, Integer, String> task = new downloadWeatherData().execute(apiurl);
+						System.out.println(apiurl);
+						task.get(20000, TimeUnit.MILLISECONDS);
+
+					 
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();;
+		
+		}
 		public void onProviderDisabled(String provider) {}
 		public void onProviderEnabled(String provider) {}
 		public void onStatusChanged(String provider, int status, Bundle extras) {}
