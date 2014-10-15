@@ -12,17 +12,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -30,58 +27,133 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.Menu;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.widget.DrawerLayout;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
+
 
 public class MainActivity extends Activity {
 
 	public String poem = null;
-	//private static final String DEBUG_TAG = null;
+	private ProgressDialog pd;
+
 	public static String apiurl=null;
 	private TextView poemView;
-	@Override
+	private static Random rand = new Random();
+
+	/*Drawer Init stuff*/
+	private DrawerLayout drawerLayout;
+	private ListView drawerList;
+	private String[] values = new String[] {"Generate New Poem"};
+
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
 
+		//progress.show();
 		poemView = (TextView)findViewById(R.id.poem);
+
+		//start of drawer
+		drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
+		drawerList = (ListView)findViewById(R.id.drawer_list);
+
+
+		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,android.R.id.text1,values);
+		drawerList.setAdapter(adapter);
+
+
+		drawerList.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+				drawerLayout.closeDrawers();
+				AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+
+					@Override
+					protected void onPreExecute() {
+						pd = new ProgressDialog(MainActivity.this);
+						pd.setTitle("Getting your Location...");
+						pd.setMessage("Please wait.");
+						pd.setCancelable(false);
+						pd.setIndeterminate(true);
+						pd.show();
+					}
+
+					@Override
+					protected Void doInBackground(Void... arg0) {
+						//call get json 
+						return null;
+					}
+
+					@Override
+					protected void onPostExecute(Void result) {
+						if (pd!=null) {
+							pd.dismiss();
+
+						}
+					}
+
+				};
+				task.execute((Void[])null);
+
+			}
+		});
+
+		drawerLayout.setDrawerListener(new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_launcher, R.string.open, R.string.title) {
+			@Override
+			public void onDrawerClosed(View drawerView) {
+				getActionBar().setTitle(R.string.title);
+				invalidateOptionsMenu();
+			}
+			@Override
+			public void onDrawerOpened(View drawerView) {
+				getActionBar().setTitle("Select an Option");
+				invalidateOptionsMenu();
+			}
+		});
+
+		//end of drawer stuff
 		LocationManager locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-		if(locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+
+		if(locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
 			locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000L,500.0f, onLocationChange);
 
-		}
-		else if(locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+		else if(locManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
 			locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000L,500.0f, onLocationChange);
 
-		}
-		else	if(locManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER)){
+		else if(locManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER))
 			locManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER,1000L,500.0f, onLocationChange);
 
-		}
-		else{
+		else
 			System.out.println("Could not acquire location at all. Turn on yer damn GPS");
-		}
-
-
 
 
 	}
+
 	class downloadWeatherData extends AsyncTask<String, Integer, String> {
-		@Override
+
 		protected String doInBackground(String... apiurl) {
 
 			try {
 				poem = getJsonFromService(apiurl[0]);
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
+
 				e.printStackTrace();
 			}
 			return apiurl[0];
 		}
 
 	}
+
+
 	public String getJsonFromService(String urlOfService) throws JSONException {
+		//final String poem="";
 		String jsoncode;
 		try {
 			int length=10000;
@@ -105,15 +177,18 @@ public class MainActivity extends Activity {
 			final int UV = current_conditions.getInt("UV");
 			String humidityString = current_conditions.getString("relative_humidity");
 			final int humidity = java.lang.Integer.parseInt(humidityString.replaceAll("[\\D]", ""));
-			System.out.println("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
+
+
 			runOnUiThread(new Runnable() {
-				
+
 				@Override
 				public void run() {
-					poemView.setText(("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity));	
+					poemView.setText("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
+					//	progress.dismiss();
 				}
 			});
-			
+
+
 			int condition=0;
 			if(temp<=32 && windSpeed >=10 && precipToday > .3){
 				condition=1; //Blizzard!
@@ -136,7 +211,7 @@ public class MainActivity extends Activity {
 			else if (visibility >=3 && weather.equals("Clear")) {
 				condition=5; //Clear day
 			}
-			else if (weather.equals("Overcast") && temp>=32) {
+			else if ((weather.equals("Overcast")||weather.equals("Mostly Cloudy")) && temp>=32) {
 				condition=6; //Cloudy day
 				String line1=overcast5();
 				String line2=overcast7();
@@ -144,27 +219,27 @@ public class MainActivity extends Activity {
 				poem=line1+"\n"+line2+"\n"+line3;
 				System.out.println(poem);
 			}
-			else if (temp>=80 && humidity >50) {
+			else if (temp>=80 && humidity >70) {
 				condition=7; //Hot & humid
 			}
+			else if(humidity>=75)
+				condition=8;
 			else if (UV>6) {
-				condition=8; //Very Sunny!
+				condition=9; //Very Sunny!
 			}
 			else if (temp<=32 && windSpeed > 10) {
-				condition=9; //Cold+Windy :(
+				condition=10; //Cold+Windy :(
 			}
 			else if (temp<=32) {
-				condition=10; //Cold!
+				condition=11; //Cold!
 			}
 			else if(temp>85){
-				condition=11; //Hot
+				condition=12; //Hot
 			}
 			System.out.println(condition);
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return poem;
@@ -172,10 +247,10 @@ public class MainActivity extends Activity {
 
 	public static String readIt(InputStream stream, int len) throws IOException, UnsupportedEncodingException {
 		Reader reader;
-		reader = new InputStreamReader(stream, "UTF-8");        
+		reader = new InputStreamReader(stream, "UTF-8");
 		char[] buffer = new char[len];
 		reader.read(buffer);
-		return new String(buffer);	
+		return new String(buffer);
 	}
 	public static String blizzard5() {
 		List<String> linePool=new LinkedList<String>();
@@ -184,7 +259,6 @@ public class MainActivity extends Activity {
 		linePool.add("Winter-Wonderland");
 		linePool.add("Salt trucks are en route");
 
-		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		return linePool.get(choice);
 	}
@@ -222,7 +296,7 @@ public class MainActivity extends Activity {
 		linePool.add("Gray clouds spread dispair");
 		linePool.add("Sun sleeps in today");
 		linePool.add("No stars out tonight");
-		Random rand = new Random();
+
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
 		return lineToReturn;
@@ -246,9 +320,7 @@ public class MainActivity extends Activity {
 		linePool.add("Feel mother nature's despair");
 		linePool.add("Moon is hidden by the clouds");
 		linePool.add("Water particles in air");
-		//linePool.add("");
-		//linePool.add("");
-		Random rand = new Random();
+
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
 		return lineToReturn;
@@ -256,7 +328,6 @@ public class MainActivity extends Activity {
 	public static String cold5() {
 		List<String> linePool=new LinkedList<String>();
 
-		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
 		return lineToReturn;
@@ -266,7 +337,6 @@ public class MainActivity extends Activity {
 		linePool.add("");
 		linePool.add("");
 
-		Random rand = new Random();
 		int choice = rand.nextInt(linePool.size());
 		String lineToReturn = linePool.get(choice);
 		return lineToReturn;
@@ -277,10 +347,10 @@ public class MainActivity extends Activity {
 			System.out.println(loc.getLatitude()+" "+loc.getLongitude());
 
 			new Thread(new Runnable() {
-				
+
 				@Override
-				public void run() { 
-					
+				public void run() {
+
 					Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
 					Address returnedAddress = null;
 					try {
@@ -288,19 +358,13 @@ public class MainActivity extends Activity {
 						try {
 							returnedAddress = address.get(0);
 						} catch (IndexOutOfBoundsException ex) {
-							//					AlertDialog.Builder builder = new AlertDialog.Builder(this)
-							//					.setMessage("Unable to find your location.")
-							//					.setNeutralButton("okay :(", new DialogInterface.OnClickListener() {
-							//						public void onClick(DialogInterface dialog, int id) {
-							//							finish();
-							//						}
+
 						}
 
-						//	builder.create();
-
 						Object[] kek=address.toArray();
-						for (Object aKek : kek) System.out.println(aKek);
-						System.out.println(returnedAddress);
+						for (Object aKek : kek) 
+							System.out.println(aKek);
+
 						String ZIPCode=null;
 						try{
 							ZIPCode = returnedAddress.getPostalCode();
@@ -310,19 +374,19 @@ public class MainActivity extends Activity {
 						String apibegin="http://api.wunderground.com/api/0484e65ed3c3a0fa/conditions/q/";
 						String apiend=".json";
 						apiurl=apibegin+ZIPCode+apiend;
-						
+
 						AsyncTask<String, Integer, String> task = new downloadWeatherData().execute(apiurl);
-						System.out.println(apiurl);
+
 						task.get(20000, TimeUnit.MILLISECONDS);
 
-					 
+
 					}catch(Exception e) {
 						e.printStackTrace();
 					}
 				}
-			}).start();;
-		
+			}).start();
 		}
+
 		public void onProviderDisabled(String provider) {}
 		public void onProviderEnabled(String provider) {}
 		public void onStatusChanged(String provider, int status, Bundle extras) {}
