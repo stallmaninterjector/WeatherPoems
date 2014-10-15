@@ -1,11 +1,4 @@
-/*
- * Copyright (c) 2013. Tom Casey
- * This program may only be used by the author's explicit written consent. Any descriptions, modifications, recounts, tales, attributions, mentions, representations, delineations, statements, portrayals,  and/or depictions of or pertaining to this program are strictly prohibited without the explicit written consent of Tom Casey.
- * Any actions percieved to be in violation of the above statement will be prosecuted to the full extent of US and international law.
- */
-
 package com.Tom.weatherpoems;
-package com.smart.weatherpoems;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +45,7 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 
-		poemView = (TextView)findViewById(R.id.poem);
+		poemView = (TextView)findViewById(R.id.poemGenerate);
 		LocationManager locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		if(locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
 			locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000L,500.0f, onLocationChange);
@@ -89,6 +82,7 @@ public class MainActivity extends Activity {
 
 	}
 	public String getJsonFromService(String urlOfService) throws JSONException {
+		//final String poem="";
 		String jsoncode;
 		try {
 			int length=10000;
@@ -113,14 +107,8 @@ public class MainActivity extends Activity {
 			String humidityString = current_conditions.getString("relative_humidity");
 			final int humidity = java.lang.Integer.parseInt(humidityString.replaceAll("[\\D]", ""));
 			System.out.println("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
-			runOnUiThread(new Runnable() {
-				
-				@Override
-				public void run() {
-					poemView.setText(("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity));	
-				}
-			});
-			
+
+
 			int condition=0;
 			if(temp<=32 && windSpeed >=10 && precipToday > .3){
 				condition=1; //Blizzard!
@@ -143,7 +131,7 @@ public class MainActivity extends Activity {
 			else if (visibility >=3 && weather.equals("Clear")) {
 				condition=5; //Clear day
 			}
-			else if (weather.equals("Overcast") && temp>=32) {
+			else if ((weather.equals("Overcast")||weather.equals("Mostly Cloudy")) && temp>=32) {
 				condition=6; //Cloudy day
 				String line1=overcast5();
 				String line2=overcast7();
@@ -151,20 +139,22 @@ public class MainActivity extends Activity {
 				poem=line1+"\n"+line2+"\n"+line3;
 				System.out.println(poem);
 			}
-			else if (temp>=80 && humidity >50) {
+			else if (temp>=80 && humidity >70) {
 				condition=7; //Hot & humid
 			}
+			else if(humidity>=75)
+				condition=8;
 			else if (UV>6) {
-				condition=8; //Very Sunny!
+				condition=9; //Very Sunny!
 			}
 			else if (temp<=32 && windSpeed > 10) {
-				condition=9; //Cold+Windy :(
+				condition=10; //Cold+Windy :(
 			}
 			else if (temp<=32) {
-				condition=10; //Cold!
+				condition=11; //Cold!
 			}
 			else if(temp>85){
-				condition=11; //Hot
+				condition=12; //Hot
 			}
 			System.out.println(condition);
 		} catch (MalformedURLException e) {
@@ -174,15 +164,23 @@ public class MainActivity extends Activity {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+		runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				poemView.setText(poem);
+			}
+		});
 		return poem;
 	}
 
 	public static String readIt(InputStream stream, int len) throws IOException, UnsupportedEncodingException {
 		Reader reader;
-		reader = new InputStreamReader(stream, "UTF-8");        
+		reader = new InputStreamReader(stream, "UTF-8");
 		char[] buffer = new char[len];
 		reader.read(buffer);
-		return new String(buffer);	
+		return new String(buffer);
 	}
 	public static String blizzard5() {
 		List<String> linePool=new LinkedList<String>();
@@ -284,10 +282,10 @@ public class MainActivity extends Activity {
 			System.out.println(loc.getLatitude()+" "+loc.getLongitude());
 
 			new Thread(new Runnable() {
-				
+
 				@Override
-				public void run() { 
-					
+				public void run() {
+
 					Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
 					Address returnedAddress = null;
 					try {
@@ -306,7 +304,8 @@ public class MainActivity extends Activity {
 						//	builder.create();
 
 						Object[] kek=address.toArray();
-						for (Object aKek : kek) System.out.println(aKek);
+						for (Object aKek : kek) 
+							System.out.println(aKek);
 						System.out.println(returnedAddress);
 						String ZIPCode=null;
 						try{
@@ -317,21 +316,22 @@ public class MainActivity extends Activity {
 						String apibegin="http://api.wunderground.com/api/0484e65ed3c3a0fa/conditions/q/";
 						String apiend=".json";
 						apiurl=apibegin+ZIPCode+apiend;
-						
+
 						AsyncTask<String, Integer, String> task = new downloadWeatherData().execute(apiurl);
 						System.out.println(apiurl);
 						task.get(20000, TimeUnit.MILLISECONDS);
 
-					 
+
 					}catch(Exception e) {
 						e.printStackTrace();
 					}
 				}
 			}).start();;
-		
 		}
+
 		public void onProviderDisabled(String provider) {}
 		public void onProviderEnabled(String provider) {}
 		public void onStatusChanged(String provider, int status, Bundle extras) {}
 	};
+
 }
