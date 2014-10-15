@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.json.JSONException;
@@ -35,6 +36,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 public class MainActivity extends Activity {
@@ -45,6 +47,7 @@ public class MainActivity extends Activity {
 	public static String apiurl=null;
 	private TextView poemView;
 	private static Random rand = new Random();
+	private LocationManager locManager;
 
 	/*Drawer Init stuff*/
 	private DrawerLayout drawerLayout;
@@ -73,34 +76,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
 				drawerLayout.closeDrawers();
-				AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
-
-					@Override
-					protected void onPreExecute() {
-						pd = new ProgressDialog(MainActivity.this);
-						pd.setTitle("Getting your Location...");
-						pd.setMessage("Please wait.");
-						pd.setCancelable(false);
-						pd.setIndeterminate(true);
-						pd.show();
-					}
-
-					@Override
-					protected Void doInBackground(Void... arg0) {
-						//call get json 
-						return null;
-					}
-
-					@Override
-					protected void onPostExecute(Void result) {
-						if (pd!=null) {
-							pd.dismiss();
-
-						}
-					}
-
-				};
-				task.execute((Void[])null);
+				refreshPoemAndDisplay();
 
 			}
 		});
@@ -119,8 +95,16 @@ public class MainActivity extends Activity {
 		});
 
 		//end of drawer stuff
-		LocationManager locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 
+
+		refreshPoemAndDisplay();
+	}
+
+	/**
+	 * CALL THIS METHOD TO REFRESH POEM
+	 */
+	private void refreshPoemAndDisplay() {
 		if(locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
 			locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000L,500.0f, onLocationChange);
 
@@ -133,27 +117,17 @@ public class MainActivity extends Activity {
 		else
 			System.out.println("Could not acquire location at all. Turn on yer damn GPS");
 
-
-	}
-
-	class downloadWeatherData extends AsyncTask<String, Integer, String> {
-
-		protected String doInBackground(String... apiurl) {
-
-			try {
-				poem = getJsonFromService(apiurl[0]);
-			} catch (JSONException e) {
-
-				e.printStackTrace();
-			}
-			return apiurl[0];
-		}
-
 	}
 
 
-	public String getJsonFromService(String urlOfService) throws JSONException {
-		//final String poem="";
+	/**
+	 * CANT CALL THIS DIRECTLY
+	 * @param urlOfService -- url which has the loc data
+	 * @param tv - the textview to past the poem into
+	 * @throws JSONException
+	 */
+	public void generatePoemAndDisplay(String urlOfService,final TextView tv) throws JSONException {
+
 		String jsoncode;
 		try {
 			int length=10000;
@@ -166,7 +140,7 @@ public class MainActivity extends Activity {
 			conn.connect();
 			InputStream rawWeatherData = conn.getInputStream();
 			jsoncode=readIt(rawWeatherData, length);
-			//System.out.println(jsoncode);
+
 			JSONObject json = new JSONObject(jsoncode);
 			JSONObject current_conditions = json.getJSONObject("current_observation");
 			final String weather =  current_conditions.getString("weather");
@@ -179,12 +153,12 @@ public class MainActivity extends Activity {
 			final int humidity = java.lang.Integer.parseInt(humidityString.replaceAll("[\\D]", ""));
 
 
+			// TODO add this to the bottom 
 			runOnUiThread(new Runnable() {
 
 				@Override
 				public void run() {
-					poemView.setText("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
-					//	progress.dismiss();
+					tv.setText("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
 				}
 			});
 
@@ -242,7 +216,7 @@ public class MainActivity extends Activity {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return poem;
+		//XXX add the top piece of data here when the poem is made
 	}
 
 	public static String readIt(InputStream stream, int len) throws IOException, UnsupportedEncodingException {
@@ -342,53 +316,85 @@ public class MainActivity extends Activity {
 		return lineToReturn;
 	}
 
-	LocationListener onLocationChange=new LocationListener() {
+	/**
+	 * Location listenter
+	 */
+	private	LocationListener onLocationChange = new LocationListener() {
 		public void onLocationChanged(final Location loc) {
 			System.out.println(loc.getLatitude()+" "+loc.getLongitude());
-
-			new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-
-					Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-					Address returnedAddress = null;
-					try {
-						List<Address> address = geocoder.getFromLocation(loc.getLatitude(), loc.getLongitude(), 1);
-						try {
-							returnedAddress = address.get(0);
-						} catch (IndexOutOfBoundsException ex) {
-
-						}
-
-						Object[] kek=address.toArray();
-						for (Object aKek : kek) 
-							System.out.println(aKek);
-
-						String ZIPCode=null;
-						try{
-							ZIPCode = returnedAddress.getPostalCode();
-						}catch(NullPointerException e){
-							System.out.println("Your location is not linked to an address.");
-						}
-						String apibegin="http://api.wunderground.com/api/0484e65ed3c3a0fa/conditions/q/";
-						String apiend=".json";
-						apiurl=apibegin+ZIPCode+apiend;
-
-						AsyncTask<String, Integer, String> task = new downloadWeatherData().execute(apiurl);
-
-						task.get(20000, TimeUnit.MILLISECONDS);
-
-
-					}catch(Exception e) {
-						e.printStackTrace();
-					}
-				}
-			}).start();
+			refreshPoemOnThread(loc);
 		}
 
 		public void onProviderDisabled(String provider) {}
 		public void onProviderEnabled(String provider) {}
 		public void onStatusChanged(String provider, int status, Bundle extras) {}
 	};
+
+	/**
+	 * Cannot be called directly 
+	 * @param loc --location
+	 */
+	public void refreshPoemOnThread(final Location loc) {
+
+		AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+
+			@Override
+			protected void onPreExecute() {
+				pd = new ProgressDialog(MainActivity.this);
+				pd.setTitle("Getting your Location...");
+				pd.setMessage("Please wait.");
+				pd.setCancelable(false);
+				pd.setIndeterminate(true);
+				pd.show();
+			}
+
+			@Override
+			protected Void doInBackground(Void... arg0) {
+
+				Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+				Address returnedAddress = null;
+				try {
+					List<Address> address = geocoder.getFromLocation(loc.getLatitude(), loc.getLongitude(), 1);
+					try {
+						returnedAddress = address.get(0);
+					} catch (IndexOutOfBoundsException ex) {
+					}
+
+					//Object[] kek=address.toArray();
+					//					for (Object aKek : kek) 
+					//						System.out.println(aKek);
+
+					String ZIPCode=null;
+					try{
+						ZIPCode = returnedAddress.getPostalCode();
+					}catch(NullPointerException e){
+						System.out.println("Your location is not linked to an address.");
+					}
+					String apibegin="http://api.wunderground.com/api/0484e65ed3c3a0fa/conditions/q/";
+					String apiend=".json";
+					apiurl=apibegin+ZIPCode+apiend;
+					generatePoemAndDisplay(apiurl,poemView);
+
+				}catch(Exception e) {}
+				return null;
+			}
+
+			@Override
+			protected void onPostExecute(Void result) {
+				if (pd!=null) 
+					pd.dismiss();
+
+			}
+
+		};
+
+
+		task.execute((Void[])null);
+
+	}
+
+	//debugging shit
+	private void sysout(String data) {
+		Toast.makeText(getApplicationContext(), data, Toast.LENGTH_SHORT).show();
+	}
 }
