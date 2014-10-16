@@ -29,12 +29,13 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,7 +45,6 @@ public class MainActivity extends Activity {
 
 	public String poem = null;
 	private ProgressDialog pd;
-	private ImageButton share;
 	public static String apiurl=null;
 	private TextView poemView;
 	private static Random rand = new Random();
@@ -69,19 +69,6 @@ public class MainActivity extends Activity {
 	 */
 	private void init() {
 
-		share = (ImageButton)findViewById(R.id.imageButton1);
-		share.setOnClickListener(new OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				Intent sendIntent = new Intent();
-				sendIntent.setAction(Intent.ACTION_SEND);
-				sendIntent.putExtra(Intent.EXTRA_TEXT, poemView.getText().toString());
-				sendIntent.setType("text/plain");
-				startActivity(Intent.createChooser(sendIntent, getResources().getText(R.string.share)));
-			}
-		});
-		
 		poemView = (TextView)findViewById(R.id.poem);
 
 		//start of drawer
@@ -118,8 +105,8 @@ public class MainActivity extends Activity {
 
 		//end of drawer stuff
 		locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-		
-		
+
+
 	}
 
 	/**
@@ -420,5 +407,30 @@ public class MainActivity extends Activity {
 	//debugging shit
 	private void sysout(String data) {
 		Toast.makeText(getApplicationContext(), data, Toast.LENGTH_SHORT).show();
+	}
+
+	//create options menus to share the poem
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
+		return super.onCreateOptionsMenu(menu);
+
+	}
+
+	//when action bar item is selected this is fired
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle presses on the action bar items
+		switch(item.getItemId()) {
+		case R.id.share:
+			Intent sendIntent = new Intent();
+			sendIntent.setAction(Intent.ACTION_SEND);
+			sendIntent.putExtra(Intent.EXTRA_TEXT, poemView.getText().toString());
+			sendIntent.setType("text/plain");
+			startActivity(Intent.createChooser(sendIntent, getResources().getText(R.string.share)));
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+
+
 	}
 }
