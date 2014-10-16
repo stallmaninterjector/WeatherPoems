@@ -179,7 +179,10 @@ public class MainActivity extends Activity {
 
 				@Override
 				public void run() {
-					tv.setText("Current Conditions: "+weather+" Temp:"+temp+" Wind speed(mph): "+windSpeed+" Rain so far today(in): "+precipToday+" Visibility(mi): "+visibility+" UV Index: "+UV+" Humidity(%): "+humidity);
+					if(poem.length()!=0)
+						tv.setText(poem);
+					else
+						tv.setText("A poem for your current weather conditions could not be generated :(");
 				}
 			});
 
