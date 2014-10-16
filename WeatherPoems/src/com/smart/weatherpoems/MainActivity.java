@@ -12,8 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,6 +19,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -31,9 +30,11 @@ import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,7 +44,7 @@ public class MainActivity extends Activity {
 
 	public String poem = null;
 	private ProgressDialog pd;
-
+	private ImageButton share;
 	public static String apiurl=null;
 	private TextView poemView;
 	private static Random rand = new Random();
@@ -59,7 +60,28 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 
-		//progress.show();
+		init();
+
+		refreshPoemAndDisplay();
+	}
+	/**
+	 * Initializes all the ui elements and 
+	 */
+	private void init() {
+
+		share = (ImageButton)findViewById(R.id.imageButton1);
+		share.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent sendIntent = new Intent();
+				sendIntent.setAction(Intent.ACTION_SEND);
+				sendIntent.putExtra(Intent.EXTRA_TEXT, poemView.getText().toString());
+				sendIntent.setType("text/plain");
+				startActivity(Intent.createChooser(sendIntent, getResources().getText(R.string.share)));
+			}
+		});
+		
 		poemView = (TextView)findViewById(R.id.poem);
 
 		//start of drawer
@@ -96,9 +118,8 @@ public class MainActivity extends Activity {
 
 		//end of drawer stuff
 		locManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-
-
-		refreshPoemAndDisplay();
+		
+		
 	}
 
 	/**

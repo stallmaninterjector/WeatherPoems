@@ -6,5 +6,5 @@
     <string name="action_settings">Settings</string>
     <string name="open">Open</string>
     <string name="title">Weather Poems</string>
-
+    <string name="share">Share With...</string>
 </resources>
