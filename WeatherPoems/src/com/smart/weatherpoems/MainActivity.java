@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
 	/*Drawer Init stuff*/
 	private DrawerLayout drawerLayout;
 	private ListView drawerList;
-	private String[] values = new String[] {"Generate New Poem"};
+	private String[] values = new String[] {"Generate New Poem","Generate Poem at New Location"};
 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -85,7 +85,14 @@ public class MainActivity extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
 				drawerLayout.closeDrawers();
-				refreshPoemAndDisplay();
+				switch(id+"") {
+				case "0":
+					refreshPoemAndDisplay();
+					break;
+				case "1":
+					//XXX start a location view to enable user to choose new location
+				}
+				
 
 			}
 		});
@@ -368,6 +375,8 @@ public class MainActivity extends Activity {
 					} catch (IndexOutOfBoundsException ex) {
 					}
 
+					sysout("In background");
+					
 					//Object[] kek=address.toArray();
 					//					for (Object aKek : kek) 
 					//						System.out.println(aKek);
