@@ -134,7 +134,7 @@ public class MainActivity extends Activity {
 	 * @param tv - the textview to past the poem into
 	 * @throws JSONException
 	 */
-	public void generatePoemAndDisplay(String urlOfService,final TextView tv) throws JSONException {
+	public void generatePoemAndDisplay(final String urlOfService,final TextView tv) throws JSONException {
 
 		String jsoncode;
 		try {
@@ -166,10 +166,19 @@ public class MainActivity extends Activity {
 
 				@Override
 				public void run() {
-					if(poem.length()!=0)
+					if(poem!=null)
 						tv.setText(poem);
-					else
-						tv.setText("A poem for your current weather conditions could not be generated :(");
+					else{
+						try {
+							generatePoemAndDisplay(urlOfService, tv);
+						}catch (JSONException e) {
+							e.printStackTrace();
+						}
+						if(poem==null)
+							tv.setText("A poem for your current weather conditions could not be generated :(");
+						else
+							tv.setText(poem);
+					}
 				}
 			});
 
