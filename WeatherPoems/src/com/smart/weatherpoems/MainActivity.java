@@ -162,25 +162,7 @@ public class MainActivity extends Activity {
 
 
 			// TODO add this to the bottom 
-			runOnUiThread(new Runnable() {
-
-				@Override
-				public void run() {
-					if(poem!=null)
-						tv.setText(poem);
-					else{
-						try {
-							generatePoemAndDisplay(urlOfService, tv);
-						}catch (JSONException e) {
-							e.printStackTrace();
-						}
-						if(poem==null)
-							tv.setText("A poem for your current weather conditions could not be generated :(");
-						else
-							tv.setText(poem);
-					}
-				}
-			});
+			
 
 
 			int condition=0;
@@ -236,6 +218,17 @@ public class MainActivity extends Activity {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				if(poem!=null)
+					tv.setText(poem);
+				else{
+						tv.setText("A poem for your current weather conditions could not be generated :(");
+				}
+			}
+		});
 		//XXX add the top piece of data here when the poem is made
 	}
 
